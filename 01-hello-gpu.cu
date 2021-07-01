@@ -5,9 +5,9 @@ void helloCPU()
   printf("Hello from the CPU.\n");
 }
 
-void helloGPU()
+__global__ void helloGPU()
 {
-  printf("Hello also from the CPU.\n");
+  printf("Hello from the GPU.\n");
 }
 
 int main(void)
@@ -15,7 +15,9 @@ int main(void)
 
   helloCPU();
 
-  helloGPU();
+  helloGPU<<<1, 1>>>();
+   
+  cudaDeviceSynchronize();
    
   return 0;
 }
