@@ -16,7 +16,7 @@ int main()
    * on the GPU.
    */
 
-  firstParallel<<<1, 5>>>();
+  firstParallel<<<5, 5>>>();
   cudaDeviceSynchronize();
 
   /*
