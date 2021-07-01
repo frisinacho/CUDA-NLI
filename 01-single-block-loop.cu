@@ -7,7 +7,7 @@
 
 __global__ void loop(int N)
 {
-  int i = blockIdx.x*blockDim.x + threadIdx.x;
+  int i = (blockIdx.x*blockDim.x)+threadIdx.x;
   printf("This is iteration number %d\n", i);
 }
 
@@ -22,6 +22,6 @@ int main()
    */
 
   int N = 10;
-  loop<<<1, N>>>(N);
+  loop<<<2, N/2>>>(N);
   cudaDeviceSynchronize();
 }
