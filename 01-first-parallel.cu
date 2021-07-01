@@ -4,7 +4,7 @@
  * Refactor firstParallel so that it can run on the GPU.
  */
 
-void firstParallel()
+__global__ void firstParallel()
 {
   printf("This should be running in parallel.\n");
 }
@@ -16,7 +16,8 @@ int main()
    * on the GPU.
    */
 
-  firstParallel();
+  firstParallel<<<1, 1>>>();
+  cudaDeviceSynchronize();
 
   /*
    * Some code is needed below so that the CPU will wait
