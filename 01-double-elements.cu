@@ -54,12 +54,12 @@ int main()
    * `a` that can be used on both the host and the device.
    */
 
-  a = (int *)malloc(size);
+  cudaMallocManaged(&a, size);
 
   init(a, N);
 
-  size_t threads_per_block = 10;
-  size_t number_of_blocks = 10;
+  size_t threads_per_block = 256;
+  size_t number_of_blocks = (N + threads_per_block - 1) / threads_per_block;
 
   /*
    * This launch will not work until the pointer `a` is also
@@ -77,5 +77,5 @@ int main()
    * accessed by both the host and the device.
    */
 
-  free(a);
+  cudaFree(a);
 }
