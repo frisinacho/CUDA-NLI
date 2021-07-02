@@ -23,6 +23,6 @@ int main()
    */
 
   int N = 10;
-  loop<<<2, N/2>>>(N);
+  loop<<<N, 1>>>(N);
   cudaDeviceSynchronize();
 }
