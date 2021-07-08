@@ -1,15 +1,16 @@
-void MxMonCPU(float* A, float* B, float* C, int N);
+void MxMonGPU(float* A, float* B, float* C, int N);
 {
-	forall (int i=0; i<N; i++)
-	forall (int j=0; j<N; j++)
+	float sum=0;
+	int i, j;
+
+	i = blockIdx.x * blockDim.x + threadIdx.x;
+	j = blockIdx.y * blockDim.y + threadIdx.y;
+
+	for (int k=0; k<N; k++)
 	{
-		float sum=0;
-		for (int k=0; k<N; k++)
-		{
-			A[i][k] float a = A[i*N + k];
-			B[k][j] float b = B[k*N + j];
-			sum += a*b;
-		}
-	C[i*N + j] = sum;
+		float a = A[i*N + k];
+		float b = B[k*N + j];
+		sum += a*b;
 	}
+	C[i*N + j] = sum;
 }
