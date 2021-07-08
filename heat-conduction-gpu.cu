@@ -1,8 +1,10 @@
 #define I2D(num, c, r) ((r)*(num)+(c))
-void kernel(int ni, int nj, float fact, float* temp_in, float*temp_out)
+__global__ void kernel(int ni, int nj, float fact, float* temp_in, float*temp_out)
+{
 	// loop over all points in domain (except boundary) (0,0)
-	for ( int j=1; j < nj-1; j++ ) {
-		for ( int i=1; i < ni-1; i++ ) {
+	j = blockIdx.x * blockDim.x + threadIdx.x;
+	i = blockIdx.y * blockDim.y + threadIdx.y;
+	if (((j>0) && (i>0)) && ((j<nj-1) && (i<ni-1))) {
 		// find indices into linear memory
 		// for central point and neighbours
 		int i00 = I2D(ni, i, j);
