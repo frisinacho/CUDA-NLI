@@ -20,24 +20,10 @@ void hostFunction(int *a, int N)
 
 int main()
 {
-
   int N = 2<<24;
   size_t size = N * sizeof(int);
   int *a;
   cudaMallocManaged(&a, size);
-
-  /*
-   * Conduct experiments to learn more about the behavior of
-   * `cudaMallocManaged`.
-   *
-   * What happens when unified memory is accessed only by the GPU?
-   * What happens when unified memory is accessed only by the CPU?
-   * What happens when unified memory is accessed first by the GPU then the CPU?
-   * What happens when unified memory is accessed first by the CPU then the GPU?
-   *
-   * Hypothesize about UM behavior, page faulting specificially, before each
-   * experiment, and then verify by running `nsys`.
-   */
-
+  hostFunction(a, N);
   cudaFree(a);
 }
