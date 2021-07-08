@@ -24,10 +24,8 @@ int main()
   size_t size = N * sizeof(int);
   int *a;
   cudaMallocManaged(&a, size);
-
-  hostFunction(a, N);
   deviceKernel<<<256, 256>>>(a, N);
   cudaDeviceSynchronize();
-
+  hostFunction(a, N);
   cudaFree(a);
 }
