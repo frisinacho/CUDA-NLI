@@ -25,6 +25,7 @@ int main()
   int *a;
   cudaMallocManaged(&a, size);
 
+  hostFunction(a, N);
   deviceKernel<<<256, 256>>>(a, N);
   cudaDeviceSynchronize();
 
