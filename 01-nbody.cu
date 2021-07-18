@@ -5,6 +5,8 @@
 #include "files.h"
 
 #define SOFTENING 1e-9f
+#define ASSERT(_err) if(_err != cudaSuccess) printf("Error: %s\n", cudaGetErrorString(_err));
+
 
 /*
  * Each body contains x, y, and z coordinate positions,
@@ -15,12 +17,17 @@ typedef struct { float x, y, z, vx, vy, vz; } Body;
 
 /*
  * Calculate the gravitational impact of all bodies in the system
- * on all others.
+ * on all others - device version
  */
+ 
+__global__
+void bodyForce(Body *p, float dt, int n) {  
+  int idxI = blockIdx.x * blockDim.x + threadIdx.x;
+  int stride = blockDim.x * gridDim.x;
 
-void bodyForce(Body *p, float dt, int n) {
-  for (int i = 0; i < n; ++i) {
-    float Fx = 0.0f; float Fy = 0.0f; float Fz = 0.0f;
+  float Fx = 0.0f; float Fy = 0.0f; float Fz = 0.0f;
+
+  for (int i = idxI; i < n; i += stride) {
 
     for (int j = 0; j < n; j++) {
       float dx = p[j].x - p[i].x;
@@ -34,12 +41,20 @@ void bodyForce(Body *p, float dt, int n) {
     }
 
     p[i].vx += dt*Fx; p[i].vy += dt*Fy; p[i].vz += dt*Fz;
-  }
+  }  
 }
 
 
 int main(const int argc, const char** argv) {
-
+  int deviceId;
+  int numberOfSMs;
+  cudaError_t cudaErr;
+  
+  cudaErr = cudaGetDevice(&deviceId);
+  ASSERT(cudaErr);
+  cudaErr = cudaDeviceGetAttribute(&numberOfSMs, cudaDevAttrMultiProcessorCount, deviceId);
+  ASSERT(cudaErr);
+  
   // The assessment will test against both 2<11 and 2<15.
   // Feel free to pass the command line argument 15 when you gernate ./nbody report files
   int nBodies = 2<<11;
@@ -67,7 +82,8 @@ int main(const int argc, const char** argv) {
   int bytes = nBodies * sizeof(Body);
   float *buf;
 
-  buf = (float *)malloc(bytes);
+  // buf = (float *)malloc(bytes);
+  cudaMallocManaged(&buf, bytes);
 
   Body *p = (Body*)buf;
 
@@ -79,7 +95,12 @@ int main(const int argc, const char** argv) {
    * This simulation will run for 10 cycles of time, calculating gravitational
    * interaction amongst bodies, and adjusting their positions to reflect.
    */
+  size_t threadsPerBlock = 256;
+  size_t numberOfBlocks = 32 * numberOfSMs;
 
+  cudaErr = cudaMemPrefetchAsync(p, bytes, deviceId);
+  ASSERT(cudaErr);
+  
   for (int iter = 0; iter < nIters; iter++) {
     StartTimer();
 
@@ -87,19 +108,30 @@ int main(const int argc, const char** argv) {
    * You will likely wish to refactor the work being done in `bodyForce`,
    * and potentially the work to integrate the positions.
    */
-
-    bodyForce(p, dt, nBodies); // compute interbody forces
-
+    
+    bodyForce<<<numberOfBlocks, threadsPerBlock>>>(p, dt, nBodies);    // compute interbody forces
+    cudaErr = cudaGetLastError();
+    ASSERT(cudaErr);
+    cudaErr = cudaDeviceSynchronize();
+    ASSERT(cudaErr);
+        
   /*
    * This position integration cannot occur until this round of `bodyForce` has completed.
    * Also, the next round of `bodyForce` cannot begin until the integration is complete.
    */
-
+    for (int i = 0 ; i < nBodies; i++) { // integrate position
+          p[i].x += p[i].vx*dt;
+          p[i].y += p[i].vy*dt;
+          p[i].z += p[i].vz*dt;
+    }
+    
+#if 0    
     for (int i = 0 ; i < nBodies; i++) { // integrate position
       p[i].x += p[i].vx*dt;
       p[i].y += p[i].vy*dt;
       p[i].z += p[i].vz*dt;
     }
+#endif
 
     const double tElapsed = GetTimer() / 1000.0;
     totalTime += tElapsed;
@@ -114,5 +146,7 @@ int main(const int argc, const char** argv) {
   // unrealistically high values.
   printf("%0.3f Billion Interactions / second", billionsOfOpsPerSecond);
 
-  free(buf);
+  // free(buf);
+  cudaFree(buf);
+  
 }
